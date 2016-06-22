@@ -1,18 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// TokenAPI BSW TokenAPI
+const TokenAPI = "https://api.bidswitch.com/discrepancy-check/v1.0/login"
+
 // API BSW post api
 const API = "https://api.bidswitch.com/discrepancy-check/v1.0/ssp/imobile/upload-report/"
+
+// User get the stupid token
+type User struct {
+	UserName string `json:"username"`
+	Password string `json:"password"`
+}
+
+// TokenResponse Unmarshal the stupid TokenResponse
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
 
 // DailyData atomic daily data
 type DailyData struct {
@@ -42,6 +59,23 @@ var reportdate string
 
 func resloveDataSource() string {
 	return "../datasource/report_" + reportdate + ".csv"
+}
+
+func getTheStupidToken() (tokenStr string) {
+	tokenStr = ""
+	user := User{UserName: "**************", Password: "**********************"}
+	buffer := new(bytes.Buffer)
+	json.NewEncoder(buffer).Encode(user)
+
+	tokenRes, _ := http.Post(TokenAPI, "application/json; charset=utf-8", buffer)
+
+	if tokenRes.StatusCode == 200 {
+		bodyBytes, _ := ioutil.ReadAll(tokenRes.Body)
+		token := new(TokenResponse)
+		json.Unmarshal(bodyBytes, &token)
+		tokenStr = token.AccessToken
+	}
+	return
 }
 
 func init() {
@@ -94,19 +128,29 @@ func main() {
 	// for the sake of BSW stupid api
 	jsonstring := strings.Replace(string(jsondata[:]), "$date$", reportdate, -1)
 
+	fmt.Println(jsonstring)
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	jsonFile, err := os.Create("../datasource/data.json")
+	// Get the stupid token
+	token := getTheStupidToken()
 
-	if err != nil {
-		fmt.Println(err)
+	// Use the stupid token to post... Why don't use basic auth directly stupid BSW
+	req, _ := http.NewRequest("POST", API, strings.NewReader(jsonstring))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", token)
+
+	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
+	res, apierr := client.Do(req)
+	defer res.Body.Close()
+
+	if apierr != nil {
+		fmt.Println(apierr)
+	} else {
+		fmt.Println(res)
 	}
-
-	defer jsonFile.Close()
-
-	jsonFile.Write([]byte(jsonstring))
-	jsonFile.Close()
 }
