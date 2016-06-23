@@ -63,7 +63,7 @@ func resloveDataSource() string {
 
 func getToken() (tokenStr string) {
 	tokenStr = ""
-	user := User{UserName: "*************", Password: "**************"}
+	user := User{UserName: "api_imobile", Password: "agile_sspapi_%351#"}
 	buffer := new(bytes.Buffer)
 	json.NewEncoder(buffer).Encode(user)
 
@@ -79,7 +79,7 @@ func getToken() (tokenStr string) {
 }
 
 func init() {
-	flag.StringVar(&reportdate, "date", time.Now().Format("2006-01-02"), "date of the report")
+	flag.StringVar(&reportdate, "date", time.Now().Format("20060102"), "date of the report")
 }
 
 func main() {
@@ -125,10 +125,16 @@ func main() {
 
 	jsondata, err := json.Marshal(report)
 
-	// for the sake of BSW stupid api
-	jsonstring := strings.Replace(string(jsondata[:]), "$date$", reportdate, -1)
+	var formatBuffer bytes.Buffer
+	for index := 0; index < 8; index++ {
+		if index == 4 || index == 6 {
+			formatBuffer.WriteString("-")
+		}
+		formatBuffer.WriteString(string(reportdate[index]))
+	}
 
-	fmt.Println(jsonstring)
+	// for the sake of BSW stupid api
+	jsonstring := strings.Replace(string(jsondata[:]), "$date$", formatBuffer.String(), -1)
 
 	if err != nil {
 		fmt.Println(err)
@@ -147,7 +153,7 @@ func main() {
 	req, _ := http.NewRequest("POST", API, strings.NewReader(jsonstring))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
 	res, apierr := client.Do(req)
