@@ -61,9 +61,9 @@ func resloveDataSource() string {
 	return "../datasource/report_" + reportdate + ".csv"
 }
 
-func getTheStupidToken() (tokenStr string) {
+func getToken() (tokenStr string) {
 	tokenStr = ""
-	user := User{UserName: "**************", Password: "**********************"}
+	user := User{UserName: "*************", Password: "**************"}
 	buffer := new(bytes.Buffer)
 	json.NewEncoder(buffer).Encode(user)
 
@@ -136,7 +136,12 @@ func main() {
 	}
 
 	// Get the stupid token
-	token := getTheStupidToken()
+	token := getToken()
+
+	tokenFile, _ := os.Create("../datasource/token.txt")
+
+	tokenFile.Write([]byte(token))
+	tokenFile.Close()
 
 	// Use the stupid token to post... Why don't use basic auth directly stupid BSW
 	req, _ := http.NewRequest("POST", API, strings.NewReader(jsonstring))
