@@ -114,7 +114,7 @@ func main() {
 		seatID := row[0]
 		currency := row[1]
 		imps, _ := strconv.Atoi(row[2])
-		cost, _ := strconv.ParseFloat(row[2], 64)
+		cost, _ := strconv.ParseFloat(row[3], 64)
 		timezone := "Asia/Tokyo" // fixed
 
 		oneRecord = Record{SeatID: seatID, Currency: currency, Data: Data{DailyData: []DailyData{{Cost: cost, Imps: imps}}}, TimeZone: timezone}
